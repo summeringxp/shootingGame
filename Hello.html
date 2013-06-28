@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style type="text/css">
+#myCanvas {
+	position: absolute;
+	top: 0px;
+	left: 0px;
+	right: 0px;
+	bottom: 0px;
+	width: 100%;
+	height: 100%;
+}
+</style>
+<script type="text/javascript" src="shootingEditor.js"></script>
+<script type="text/javascript" src="particleDrawers.js"></script>
+<script type="text/javascript">
+
+window.onload = function(){
+	init();   
+}
+
+var c;
+var ctx;
+var w;
+var h;
+var gm = new GameManager();
+function GameManager(){
+	this.FPS=30;
+	this.particleGroup=[];
+	
+}
+function init(){
+	c = document.getElementById("myCanvas");
+	ctx = this.c.getContext("2d");
+	w = this.c.width;
+	h = this.c.height;
+	var pg0 = new ParticleGroup(defaultUpdateFun);
+	for(var i=0;i<pg0.number;i++){
+		var p = new Particle(0.5,0.1,0.01,0.01*Math.cos(i),0.01*Math.sin(i),0,0,0);
+		pg0.particle.push(p);
+	}
+	gm.particleGroup.push(pg0);
+	 setInterval(function() {
+         update();
+         draw();
+     }, 1000/gm.FPS);
+}
+
+function update(){
+	for(var i=0;i<gm.particleGroup.length;i++){
+		for(var j=0;j<gm.particleGroup[i].particle.length;j++){
+			gm.particleGroup[i].particle[j].x += gm.particleGroup[i].particle[j].sx;
+			gm.particleGroup[i].particle[j].y += gm.particleGroup[i].particle[j].sy;
+			gm.particleGroup[i].particle[j].sx += gm.particleGroup[i].particle[j].ax;
+			gm.particleGroup[i].particle[j].sy += gm.particleGroup[i].particle[j].ay;
+			gm.particleGroup[i].particle[j].ax = 0;//(gm.particleGroup[i].particle[j].tx*w-gm.particleGroup[i].particle[j].x)>0?0.01:-0.01;
+			gm.particleGroup[i].particle[j].ay = 0;//(gm.particleGroup[i].particle[j].ty*h-gm.particleGroup[i].particle[j].y)>0?0.01:-0.01;			
+		}
+	}
+}
+function draw(){
+	ctx.clearRect ( 0 , 0 , w , h );
+	drawArc(ctx,50,50,50,w,h);
+	for(var i=0;i<gm.particleGroup.length;i++){
+		for(var j=0;j<gm.particleGroup[i].particle.length;j++){
+			drawArc(ctx,gm.particleGroup[i].particle[j].x,gm.particleGroup[i].particle[j].y,gm.particleGroup[i].particle[j].r,w,h);
+		}
+	}
+}
+</script>
+</head>
+<body>
+
+<canvas id="myCanvas">
+Your browser does not support the HTML5 canvas tag.
+</canvas>
+
+</body>
+</html>
