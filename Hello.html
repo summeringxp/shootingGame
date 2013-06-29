@@ -16,8 +16,23 @@
 <script type="text/javascript" src="particleDrawers.js"></script>
 <script type="text/javascript">
 
+//groupPattern, particleAmount, repeatTime, gapTime, StartTime, drawer, color
+var sectionList = [
+[createBasicGroup2,1,200,500,2000,drawArc,'#FF0000'],
+[createBasicGroup2,2,10,50,5500,drawArc,'#FF00FF'],
+[createBasicGroup2,2,10,50,6500,drawArc,'#FF00FF'],
+[createBasicGroup2,2,10,50,7500,drawArc,'#FF00FF'],
+[createBasicGroup,5,5,100,500,drawArc,'#888888'],
+[createBasicGroup,8,10,60,4000,drawArc,'#000000'],
+[createBasicGroup,5,10,60,6000,drawArc,'#123456'],
+[createBasicGroup,5,10,60,5000,drawArc,'#003333']
+];
+
+
+
+
 window.onload = function(){
-	init();   
+	init(); 
 }
 
 var c;
@@ -25,19 +40,80 @@ var ctx;
 var w;
 var h;
 var gm = new GameManager();
+var charactor = new Charactor(100,0.0003,100,testCharDrawer);
+function Charactor(hp,speed,shellmax,drawer){
+	this.x = 0.5;
+	this.y = 0.8;
+	this.speed = speed;
+	this.sx = 0;
+	this.sy = 0;
+	this.hp =hp;
+	this.drawer = drawer;
+	this.hitted = false;
+	this.shellTime = 0;
+	this.shellmax = shellmax;
+}
+
 function GameManager(){
 	this.FPS=30;
+	this.realFPS=0;
 	this.particleGroup=[];
 	this.startTime=new Date().getTime();
+	this.sections=[];
+	this.lastTime = new Date().getTime();
+	this.mapEdge = [0.05,0.95,0.05,0.95];
+	this.particleCount=0;
+}
+
+function Section(groupPattern,particleAmount,repeatStepCount,gapTime,startTime,drawer,color){
+	this.startTime = startTime;
+	this.groupPattern = groupPattern;
+	this.repeatStepCount = repeatStepCount;
+	this.particleAmount = particleAmount;
+	this.gapTime = gapTime;
+	this.color = color;
+	this.drawer = drawer;
+	this.currentStep=0;
 }
 function init(){
 	c = document.getElementById("myCanvas");
 	ctx = this.c.getContext("2d");
 	w = this.c.width;
 	h = this.c.height;
-	var pg0 = createBasicGroup();
+	for(var i=0;i<sectionList.length;i++){
+		var section = new Section(sectionList[i][0],sectionList[i][1],sectionList[i][2],sectionList[i][3],sectionList[i][4],sectionList[i][5],sectionList[i][6]);
+		gm.sections.push(section);
+	}
+	window.addEventListener('keyup',function(e){
+		var key = e.keyCode;
+		//37left 38up 39right 40down
+		if ((e.keyCode == 37&&charactor.sx<0) || (e.keyCode == 39&&charactor.sx>0)) {
+			charactor.sx = 0;
+		}
+		if ((e.keyCode == 38 &&charactor.sy<0)|| (e.keyCode == 40&&charactor.sy>0)) {
+			charactor.sy = 0;
+		}
+	},false);
+	window.addEventListener('keydown',function(e){
+		var now = new Date().getTime();
+		var t = now-gm.lastTime;
+		var key = e.keyCode;
+		//37left 38up 39right 40down
+		if (e.keyCode == 37) {
+			charactor.sx = 0-charactor.speed;
+		}
+		if (e.keyCode == 39) {
+			charactor.sx = charactor.speed;
+		}
+		if (e.keyCode == 38) {
+			charactor.sy = 0-charactor.speed;
+		}
+		if (e.keyCode == 40) {
+			charactor.sy = charactor.speed;
+		}
+		gm.lastTime = now;
+	},false);
 	
-	gm.particleGroup.push(pg0);
 	 setInterval(function() {
          update();
          draw();
@@ -47,12 +123,29 @@ function init(){
 
 function update(){
 	var now = new Date().getTime();
-	if(now%20>10){
-		var pg0 = createBasicGroup();
-		gm.particleGroup.push(pg0);
+	var t = now - gm.lastTime;
+	gm.lastTime = now;
+	gm.realFPS = Math.floor(1000/(t+0.1));
+	charactor.shellTime-=t;
+	charactor.shellTime = charactor.shellTime<0?0:charactor.shellTime;
+	gm.lastTime = now;
+	for(var i=0;i<gm.sections.length;i++){
+		if(now-gm.startTime>gm.sections[i].startTime+gm.sections[i].currentStep*gm.sections[i].gapTime
+			 && gm.sections[i].currentStep< gm.sections[i].repeatStepCount
+			 && now-gm.startTime<=gm.sections[i].startTime+(gm.sections[i].currentStep+1)*gm.sections[i].gapTime){
+			 	gm.sections[i].currentStep++;
+			var pg0 = gm.sections[i].groupPattern(gm.sections[i].particleAmount,gm.sections[i].drawer,gm.sections[i].color);
+			gm.particleGroup.push(pg0);
+		}
 	}
-	updatePosition();
+	updatePosition(t);
 	updateFunction();
+	if(charactor.hitted){
+		charactor.hitted = false;
+		charactor.shellTime = charactor.shellmax;
+		charactor.hp--;
+	}
+	
 }
 function updateFunction(){
 	for(var i=0;i<gm.particleGroup.length;i++){
@@ -62,15 +155,20 @@ function updateFunction(){
 		for(var j=0;j<gm.particleGroup[i].pattern.length;j++){
 			var now = new Date().getTime();
             if(now > gm.particleGroup[i].pattern[j].startTime+gm.particleGroup[i].bornTime){
-            	gm.particleGroup[i] = gm.particleGroup[i].pattern[j].callback(gm.particleGroup[i]);
+            	gm.particleGroup[i] = gm.particleGroup[i].pattern[j].callback(gm.particleGroup[i],charactor.x,charactor.y);
             	gm.particleGroup[i].pattern.splice(j,1);
             	break;
             }
 		}
 	}
-	
 }
-function updatePosition(){
+function updatePosition(t){
+	charactor.x += charactor.sx*t;
+	charactor.y += charactor.sy*t;
+	charactor.x = charactor.x<gm.mapEdge[0]?gm.mapEdge[0]:charactor.x;
+	charactor.x = charactor.x>gm.mapEdge[1]?gm.mapEdge[1]:charactor.x;
+	charactor.y = charactor.y<gm.mapEdge[2]?gm.mapEdge[2]:charactor.y;
+	charactor.y = charactor.y>gm.mapEdge[3]?gm.mapEdge[3]:charactor.y;
 	var nullCount2 = 0;
 	for(var i=0;i<gm.particleGroup.length;i++){
 		if(gm.particleGroup[i]==null){
@@ -83,16 +181,19 @@ function updatePosition(){
 				nullCount++;
 				continue;
 			}
-			gm.particleGroup[i].particle[j].x += gm.particleGroup[i].particle[j].sx;
-			gm.particleGroup[i].particle[j].y += gm.particleGroup[i].particle[j].sy;
+			gm.particleGroup[i].particle[j].x += gm.particleGroup[i].particle[j].sx*t;
+			gm.particleGroup[i].particle[j].y += gm.particleGroup[i].particle[j].sy*t;
 			if(gm.particleGroup[i].particle[j].x>2||gm.particleGroup[i].particle[j].x<-1||gm.particleGroup[i].particle[j].y>2||gm.particleGroup[i].particle[j].y<-1){
 				gm.particleGroup[i].particle[j]=null;
 				continue;
 			}
-			gm.particleGroup[i].particle[j].sx += gm.particleGroup[i].particle[j].ax;
-			gm.particleGroup[i].particle[j].sy += gm.particleGroup[i].particle[j].ay;
-			gm.particleGroup[i].particle[j].ax = 0;//(gm.particleGroup[i].particle[j].tx*w-gm.particleGroup[i].particle[j].x)>0?0.01:-0.01;
-			gm.particleGroup[i].particle[j].ay = 0;//(gm.particleGroup[i].particle[j].ty*h-gm.particleGroup[i].particle[j].y)>0?0.01:-0.01;			
+			if(charactor.shellTime==0 && getDistance2(charactor.x,charactor.y,gm.particleGroup[i].particle[j].x,gm.particleGroup[i].particle[j].y)<gm.particleGroup[i].particle[j].r*gm.particleGroup[i].particle[j].r){
+				charactor.hitted = true;		
+			}
+			gm.particleGroup[i].particle[j].sx += gm.particleGroup[i].particle[j].ax*t;
+			gm.particleGroup[i].particle[j].sy += gm.particleGroup[i].particle[j].ay*t;
+			gm.particleGroup[i].particle[j].ax = (gm.particleGroup[i].particle[j].tx-gm.particleGroup[i].particle[j].x)>0?0.000001*gm.particleGroup[i].particle[j].trackLevel:-0.000001*gm.particleGroup[i].particle[j].trackLevel;
+			gm.particleGroup[i].particle[j].ay = (gm.particleGroup[i].particle[j].ty-gm.particleGroup[i].particle[j].y)>0?0.000001*gm.particleGroup[i].particle[j].trackLevel:-0.000001*gm.particleGroup[i].particle[j].trackLevel;			
 		}
 		if(gm.particleGroup[i].particle.length==nullCount){
 			gm.particleGroup[i]=null;
@@ -103,10 +204,13 @@ function updatePosition(){
         	 gm.particleGroup.splice( i, 1 );
          }
 	}
+	
+	
+	
 }
 function draw(){
 	ctx.clearRect ( 0 , 0 , w , h );
-	drawArc(ctx,50,50,50,w,h);
+	gm.particleCount=0;
 	for(var i=0;i<gm.particleGroup.length;i++){
 		if(gm.particleGroup[i]==null){
             continue;
@@ -115,17 +219,25 @@ function draw(){
 			if(gm.particleGroup[i].particle[j]==null){
                  continue;
 			}
-			drawArc(ctx,gm.particleGroup[i].particle[j].x,gm.particleGroup[i].particle[j].y,gm.particleGroup[i].particle[j].r,w,h);
+			gm.particleCount++;
+			gm.particleGroup[i].drawer(ctx,gm.particleGroup[i].particle[j].x,gm.particleGroup[i].particle[j].y,gm.particleGroup[i].particle[j].sx,gm.particleGroup[i].particle[j].sy,gm.particleGroup[i].particle[j].r,w,h,gm.particleGroup[i].color);
 		}
 	}
+	charactor.drawer(ctx,charactor.x,charactor.y,charactor.sx,charactor.sy,w,h,'blue');
+	drawText(ctx,"HP:"+charactor.hp+" FPS:"+gm.realFPS+" particles:"+gm.particleCount,w,h);
 }
+
+function getDistance2(x0,y0,x1,y1){
+	return (x0-x1)*(x0-x1)+(y0-y1)*(y0-y1);
+}
+
 </script>
+
 </head>
 <body>
 
 <canvas id="myCanvas">
 Your browser does not support the HTML5 canvas tag.
 </canvas>
-
 </body>
 </html>
