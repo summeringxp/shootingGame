@@ -1,6 +1,6 @@
 function drawArc(context,x,y,vx,vy,r,w,h,color){
 	context.beginPath();
-	var grd=ctx.createRadialGradient(x*w, y*h,r*Math.sqrt(w*w+h*h)/2,x*w,y*h,r*Math.sqrt(w*w+h*h));
+	var grd = context.createRadialGradient(x*w, y*h,r*Math.sqrt(w*w+h*h)/2,x*w,y*h,r*Math.sqrt(w*w+h*h));
 	grd.addColorStop(0,"white");
 	grd.addColorStop(1,color);
 	context.fillStyle=grd;
@@ -28,7 +28,7 @@ function testCharHittedDrawer(context,x,y,vx,vy,w,h,color){
     context.fill();
     context.fillStyle = "#000000";
 	context.font="8px Arial";
-	context.fillText("痛いです！",x*w, y*h);
+	context.fillText("痛い",x*w, y*h);
    
 }
 

@@ -139,17 +139,17 @@ function defaultUpdateFun3(particleGroup,x,y){
 		}
 		particleGroup.particle[j].tx=x;
 		particleGroup.particle[j].ty=y;
-		particleGroup.particle[j].trackLevel=1;
+		particleGroup.particle[j].trackLevel=0.5;
 	}
 	return particleGroup;
 }
 
 
 ////////////////////////////group////////////////////////
-function createBasicGroup(commanPattern,number,drawer,color,t){
+function createBasicGroup(commanPattern,particleInitAttr,number,drawer,color,t){
 	var pg = new ParticleGroup(commanPattern,number,drawer,color);
 	for(var i=0;i<pg.number;i++){
-		var p = new Particle(0.5,0.1,0.01,0.0006,i*Math.PI/pg.number,0,0,0);
+		var p = new Particle(particleInitAttr[0],particleInitAttr[1],particleInitAttr[2],particleInitAttr[3],i*Math.PI/pg.number,0,0,0);
 		pg.particle.push(p);
 	}
 	var pattern1 = new Pattern(0,defaultUpdateFun3);
@@ -159,10 +159,10 @@ function createBasicGroup(commanPattern,number,drawer,color,t){
 	return pg;
 }
 
-function createBasicGroup2(commanPattern,number,drawer,color,t){
+function createBasicGroup2(commanPattern,particleInitAttr,number,drawer,color,t){
 	var pg = new ParticleGroup(commanPattern,number,drawer,color);
 	for(var i=0;i<pg.number;i++){
-		var p = new Particle(0.5,0.1,0.03,0.0006,Math.PI/2,0,0,0);
+		var p = new Particle(particleInitAttr[0],particleInitAttr[1],particleInitAttr[2],particleInitAttr[3],Math.PI/2,0,0,0);
 		pg.particle.push(p);
 	}
 	var pattern1 = new Pattern(0,defaultUpdateFun3);
